@@ -29,9 +29,34 @@ from Library.plot_generator import (
 from analysis_module import save_report
 from Library.data_exporter import export_to_csv
 
-CSV_FOLDER_PATH = "../Data/csse_covid_19_daily_reports/"
-CONFIG_PATH = "config.ini"
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def resource_path(relative_path: str) -> str:
+    """
+    Absolute path to resource in dev and in PyInstaller.
+    relative_path like: "Data/..." or "images/..."
+    """
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        base_path = sys._MEIPASS
+    else:
+        # project root = one level up from Scripts/
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return os.path.join(base_path, relative_path)
+
+CSV_FOLDER_PATH = resource_path(os.path.join("Data", "csse_covid_19_daily_reports"))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+def writable_config_path() -> str:
+    """
+    Store config.ini in a user-writable location when running as EXE.
+    """
+    if getattr(sys, "frozen", False):
+        app_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "IncomePredictor")
+        os.makedirs(app_dir, exist_ok=True)
+        return os.path.join(app_dir, "config.ini")
+    # dev mode: use Scripts/config.ini
+    return os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "Scripts", "config.ini")
+
+CONFIG_PATH = writable_config_path()
+
 
 FONT_FAMILY = FONT_SIZE = SIDEBAR_FONT_FAMILY = SIDEBAR_FONT_SIZE = None
 REPORT_BUTTON_COLOR = EXPORT_BUTTON_COLOR = BUTTON_COLOR = None
