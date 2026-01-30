@@ -5,6 +5,7 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
 import configparser
+import subprocess
 from PIL import Image, ImageTk
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,14 +43,27 @@ def resource_path(relative_path: str) -> str:
     return os.path.join(base_path, relative_path)
 
 CSV_FOLDER_PATH = resource_path(os.path.join("Data", "csse_covid_19_daily_reports"))
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+def get_base_dir():
+    if getattr(sys, "frozen", False):
+        # When bundled, use a writable directory in user's AppData
+        app_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "CovidAnalysis")
+        # Create subdirectories if they don't exist
+        os.makedirs(os.path.join(app_dir, "Graphics"), exist_ok=True)
+        os.makedirs(os.path.join(app_dir, "Output", "exports"), exist_ok=True)
+        os.makedirs(os.path.join(app_dir, "Output", "reports"), exist_ok=True)
+        return app_dir
+    else:
+        # In dev mode, use the project root
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+BASE_DIR = get_base_dir()
 
 def writable_config_path() -> str:
     """
     Store config.ini in a user-writable location when running as EXE.
     """
     if getattr(sys, "frozen", False):
-        app_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "IncomePredictor")
+        app_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "CovidAnalysis")
         os.makedirs(app_dir, exist_ok=True)
         return os.path.join(app_dir, "config.ini")
     # dev mode: use Scripts/config.ini
@@ -102,12 +116,14 @@ def apply_config():
     BG_COLOR = safe_get("bg_color", "white")
 
 
-def _graphics_output_dir():
+def _graphics_output_dir() -> str:
     """Return the absolute path to the graphics output directory."""
-    return os.path.join(os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-        'Work', 'Graphics'
-    )
+    if getattr(sys, "frozen", False):
+        app_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "CovidAnalysis", "Graphics")
+    else:
+        app_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "Graphics")
+    os.makedirs(app_dir, exist_ok=True)
+    return app_dir
 
 
 def data_page(page_frame):
@@ -736,8 +752,17 @@ def configuration_page(page_frame):
             "Configuration saved. The application will now restart."
         )
 
-        python = sys.executable
-        os.execl(python, python, *sys.argv)
+        if getattr(sys, 'frozen', False):
+            # Bundled executable
+            if sys.platform == "win32":
+                subprocess.Popen([sys.executable], creationflags=subprocess.DETACHED_PROCESS)
+            else:
+                subprocess.Popen([sys.executable])
+            sys.exit()
+        else:
+            # Development mode
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
 
     save_btn = tk.Button(
         configuration_page_frame,
@@ -763,13 +788,13 @@ def launch_gui():
     root.title('Tkinter Covid-19 Analysis')
 
     # Sidebar icons
-    toggle_icon = tk.PhotoImage(file='images/open_menu.png')
-    close_icon = tk.PhotoImage(file='images/close_menu.png')
-    data_icon = tk.PhotoImage(file='images/data.png')
-    filter_icon = tk.PhotoImage(file='images/data_filtering.png')
-    statistics_icon = tk.PhotoImage(file='images/statistics.png')
-    visualization_icon = tk.PhotoImage(file='images/visualization.png')
-    configuration_icon = tk.PhotoImage(file='images/configuration.png')
+    toggle_icon = tk.PhotoImage(file=resource_path('images/open_menu.png'))
+    close_icon = tk.PhotoImage(file=resource_path('images/close_menu.png'))
+    data_icon = tk.PhotoImage(file=resource_path('images/data.png'))
+    filter_icon = tk.PhotoImage(file=resource_path('images/data_filtering.png'))
+    statistics_icon = tk.PhotoImage(file=resource_path('images/statistics.png'))
+    visualization_icon = tk.PhotoImage(file=resource_path('images/visualization.png'))
+    configuration_icon = tk.PhotoImage(file=resource_path('images/configuration.png'))
 
 
     def switcher(ind, page, pg):
