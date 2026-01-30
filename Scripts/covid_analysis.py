@@ -7,5 +7,7 @@ the user interface and data processing for COVID-related analysis.
 """
 
 if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.freeze_support()
     from gui import launch_gui
     launch_gui()
