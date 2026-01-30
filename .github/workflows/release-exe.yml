@@ -30,14 +30,19 @@ jobs:
       - name: Build EXE (PyInstaller)
         run: |
           cd Scripts
-          pyinstaller --onefile --windowed `
+          pyinstaller --onedir --windowed `
             --paths ".." `
             --add-data "..\Data;Data" `
             --add-data "images;images" `
             --add-data "config.ini;." `
             covid_analysis.py
 
+      - name: Zip build folder
+        run: |
+          powershell Compress-Archive -Path Scripts\dist\covid_analysis\* -DestinationPath covid_analysis-windows.zip
+
       - name: Create GitHub Release & upload EXE
         uses: softprops/action-gh-release@v2
         with:
-          files: Scripts/dist/covid_analysis.exe
+          files: covid_analysis-windows.zip
+
